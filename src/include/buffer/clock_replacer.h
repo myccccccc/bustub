@@ -47,7 +47,7 @@ class ClockReplacer : public Replacer {
 
  private:
   struct clock_unit {
-    bool ref_flag = false;
+    bool ref_flag = true;
     bool pin_flag = true;
   };
 

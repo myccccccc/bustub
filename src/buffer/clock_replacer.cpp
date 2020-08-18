@@ -37,7 +37,6 @@ auto ClockReplacer::Victim(frame_id_t *frame_id) -> bool {
     if ((!clock_hand->pin_flag) && (!clock_hand->ref_flag)) {
       *frame_id = clock_hand - clock_vector.begin();
       Pin(*frame_id);
-      move_clock_hand();
       break;
     }
     if ((!clock_hand->pin_flag) && (clock_hand->ref_flag)) {
