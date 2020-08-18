@@ -45,7 +45,7 @@ class BufferPoolManager {
   ~BufferPoolManager();
 
   /** Grading function. Do not modify! */
-  Page *FetchPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
+  auto FetchPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) -> Page * {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
     auto *result = FetchPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
@@ -53,7 +53,7 @@ class BufferPoolManager {
   }
 
   /** Grading function. Do not modify! */
-  bool UnpinPage(page_id_t page_id, bool is_dirty, bufferpool_callback_fn callback = nullptr) {
+  auto UnpinPage(page_id_t page_id, bool is_dirty, bufferpool_callback_fn callback = nullptr) -> bool {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
     auto result = UnpinPageImpl(page_id, is_dirty);
     GradingCallback(callback, CallbackType::AFTER, page_id);
@@ -61,7 +61,7 @@ class BufferPoolManager {
   }
 
   /** Grading function. Do not modify! */
-  bool FlushPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
+  auto FlushPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) -> bool {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
     auto result = FlushPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
@@ -69,7 +69,7 @@ class BufferPoolManager {
   }
 
   /** Grading function. Do not modify! */
-  Page *NewPage(page_id_t *page_id, bufferpool_callback_fn callback = nullptr) {
+  auto NewPage(page_id_t *page_id, bufferpool_callback_fn callback = nullptr) -> Page * {
     GradingCallback(callback, CallbackType::BEFORE, INVALID_PAGE_ID);
     auto *result = NewPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, *page_id);
@@ -77,7 +77,7 @@ class BufferPoolManager {
   }
 
   /** Grading function. Do not modify! */
-  bool DeletePage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
+  auto DeletePage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) -> bool {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
     auto result = DeletePageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
@@ -92,10 +92,10 @@ class BufferPoolManager {
   }
 
   /** @return pointer to all the pages in the buffer pool */
-  Page *GetPages() { return pages_; }
+  auto GetPages() -> Page * { return pages_; }
 
   /** @return size of the buffer pool */
-  size_t GetPoolSize() { return pool_size_; }
+  auto GetPoolSize() const -> size_t { return pool_size_; }
 
  protected:
   /**
@@ -105,7 +105,7 @@ class BufferPoolManager {
    * @param callback_type BEFORE or AFTER
    * @param page_id the page id to invoke the callback with
    */
-  void GradingCallback(bufferpool_callback_fn callback, CallbackType callback_type, page_id_t page_id) {
+  static void GradingCallback(bufferpool_callback_fn callback, CallbackType callback_type, page_id_t page_id) {
     if (callback != nullptr) {
       callback(callback_type, page_id);
     }
@@ -116,7 +116,7 @@ class BufferPoolManager {
    * @param page_id id of page to be fetched
    * @return the requested page
    */
-  Page *FetchPageImpl(page_id_t page_id);
+  auto FetchPageImpl(page_id_t page_id) -> Page *;
 
   /**
    * Unpin the target page from the buffer pool.
@@ -124,28 +124,28 @@ class BufferPoolManager {
    * @param is_dirty true if the page should be marked as dirty, false otherwise
    * @return false if the page pin count is <= 0 before this call, true otherwise
    */
-  bool UnpinPageImpl(page_id_t page_id, bool is_dirty);
+  auto UnpinPageImpl(page_id_t page_id, bool is_dirty) -> bool;
 
   /**
    * Flushes the target page to disk.
    * @param page_id id of page to be flushed, cannot be INVALID_PAGE_ID
    * @return false if the page could not be found in the page table, true otherwise
    */
-  bool FlushPageImpl(page_id_t page_id);
+  auto FlushPageImpl(page_id_t page_id) -> bool;
 
   /**
    * Creates a new page in the buffer pool.
    * @param[out] page_id id of created page
    * @return nullptr if no new pages could be created, otherwise pointer to new page
    */
-  Page *NewPageImpl(page_id_t *page_id);
+  auto NewPageImpl(page_id_t *page_id) -> Page *;
 
   /**
    * Deletes a page from the buffer pool.
    * @param page_id id of page to be deleted
    * @return false if the page exists but could not be deleted, true if the page didn't exist or deletion succeeded
    */
-  bool DeletePageImpl(page_id_t page_id);
+  auto DeletePageImpl(page_id_t page_id) -> bool;
 
   /**
    * Flushes all the pages in the buffer pool to disk.
@@ -174,6 +174,6 @@ class BufferPoolManager {
    * Get a free page from free_list_ or replacer_, this func is used by NewPageImpl and FetchPageImpl
    * @return frame_id id of the free page that we found, -1 otherwise
    */
-  frame_id_t get_free_page(void);
+  auto get_free_page() -> frame_id_t;
 };
 }  // namespace bustub

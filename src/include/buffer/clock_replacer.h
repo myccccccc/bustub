@@ -37,13 +37,13 @@ class ClockReplacer : public Replacer {
    */
   ~ClockReplacer() override;
 
-  bool Victim(frame_id_t *frame_id) override;
+  auto Victim(frame_id_t *frame_id) -> bool override;
 
   void Pin(frame_id_t frame_id) override;
 
   void Unpin(frame_id_t frame_id) override;
 
-  size_t Size() override;
+  auto Size() -> size_t override;
 
  private:
   struct clock_unit {
@@ -57,7 +57,7 @@ class ClockReplacer : public Replacer {
 
   decltype(clock_vector)::iterator clock_hand;
 
-  void move_clock_hand(void);
+  void move_clock_hand();
 };
 
 }  // namespace bustub
