@@ -14,16 +14,57 @@
 
 namespace bustub {
 
-ClockReplacer::ClockReplacer(size_t num_pages) {}
+ClockReplacer::ClockReplacer(size_t num_pages)
+    : clock_vector(decltype(clock_vector)(num_pages)),
+      ClockReplacer_frame_counter(0),
+      clock_hand(clock_vector.begin()) {}
 
 ClockReplacer::~ClockReplacer() = default;
 
-bool ClockReplacer::Victim(frame_id_t *frame_id) { return false; }
+void ClockReplacer::move_clock_hand(void) {
+    if (clock_hand + 1 == clock_vector.end()) {
+        clock_hand = clock_vector.begin();
+    } else {
+        clock_hand += 1;
+    }
+}
 
-void ClockReplacer::Pin(frame_id_t frame_id) {}
+bool ClockReplacer::Victim(frame_id_t *frame_id) {
+    if (ClockReplacer_frame_counter == 0) {
+        return false;
+    } else {
+        while (true) {
+            if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == false)) {
+                *frame_id = clock_hand - clock_vector.begin();
+                Pin(*frame_id);
+                move_clock_hand();
+                break;
+            } else if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == true)) {
+                clock_hand->ref_flag = false;
+                move_clock_hand();
+            } else {
+                move_clock_hand();
+            }
+        }
+        return true;
+    }
+}
 
-void ClockReplacer::Unpin(frame_id_t frame_id) {}
+void ClockReplacer::Pin(frame_id_t frame_id) {
+    if ((clock_vector.begin()+frame_id)->pin_flag == false) {
+        ClockReplacer_frame_counter -= 1;
+    }
+    (clock_vector.begin()+frame_id)->pin_flag = true;
+    (clock_vector.begin()+frame_id)->ref_flag = true;
+}
 
-size_t ClockReplacer::Size() { return 0; }
+void ClockReplacer::Unpin(frame_id_t frame_id) {
+    if ((clock_vector.begin()+frame_id)->pin_flag == true) {
+        ClockReplacer_frame_counter += 1;
+    }
+    (clock_vector.begin()+frame_id)->pin_flag = false;
+}
+
+size_t ClockReplacer::Size() { return ClockReplacer_frame_counter; }
 
 }  // namespace bustub

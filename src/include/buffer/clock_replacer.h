@@ -46,7 +46,18 @@ class ClockReplacer : public Replacer {
   size_t Size() override;
 
  private:
-  // TODO(student): implement me!
+  struct clock_unit {
+    bool ref_flag = false;
+    bool pin_flag = true;
+  };
+
+  std::vector<struct clock_unit> clock_vector;
+
+  size_t ClockReplacer_frame_counter;
+
+  decltype(clock_vector)::iterator clock_hand;
+
+  void move_clock_hand(void);
 };
 
 }  // namespace bustub
