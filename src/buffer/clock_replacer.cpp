@@ -22,47 +22,47 @@ ClockReplacer::ClockReplacer(size_t num_pages)
 ClockReplacer::~ClockReplacer() = default;
 
 void ClockReplacer::move_clock_hand(void) {
-    if (clock_hand + 1 == clock_vector.end()) {
-        clock_hand = clock_vector.begin();
-    } else {
-        clock_hand += 1;
-    }
+  if (clock_hand + 1 == clock_vector.end()) {
+    clock_hand = clock_vector.begin();
+  } else {
+    clock_hand += 1;
+  }
 }
 
 bool ClockReplacer::Victim(frame_id_t *frame_id) {
-    if (ClockReplacer_frame_counter == 0) {
-        return false;
-    } else {
-        while (true) {
-            if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == false)) {
-                *frame_id = clock_hand - clock_vector.begin();
-                Pin(*frame_id);
-                move_clock_hand();
-                break;
-            } else if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == true)) {
-                clock_hand->ref_flag = false;
-                move_clock_hand();
-            } else {
-                move_clock_hand();
-            }
-        }
-        return true;
+  if (ClockReplacer_frame_counter == 0) {
+    return false;
+  } else {
+    while (true) {
+      if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == false)) {
+        *frame_id = clock_hand - clock_vector.begin();
+        Pin(*frame_id);
+        move_clock_hand();
+        break;
+      } else if ((clock_hand->pin_flag == false) && (clock_hand->ref_flag == true)) {
+        clock_hand->ref_flag = false;
+        move_clock_hand();
+      } else {
+        move_clock_hand();
+      }
     }
+    return true;
+  }
 }
 
 void ClockReplacer::Pin(frame_id_t frame_id) {
-    if ((clock_vector.begin()+frame_id)->pin_flag == false) {
-        ClockReplacer_frame_counter -= 1;
-    }
-    (clock_vector.begin()+frame_id)->pin_flag = true;
-    (clock_vector.begin()+frame_id)->ref_flag = true;
+  if ((clock_vector.begin() + frame_id)->pin_flag == false) {
+    ClockReplacer_frame_counter -= 1;
+  }
+  (clock_vector.begin() + frame_id)->pin_flag = true;
+  (clock_vector.begin() + frame_id)->ref_flag = true;
 }
 
 void ClockReplacer::Unpin(frame_id_t frame_id) {
-    if ((clock_vector.begin()+frame_id)->pin_flag == true) {
-        ClockReplacer_frame_counter += 1;
-    }
-    (clock_vector.begin()+frame_id)->pin_flag = false;
+  if ((clock_vector.begin() + frame_id)->pin_flag == true) {
+    ClockReplacer_frame_counter += 1;
+  }
+  (clock_vector.begin() + frame_id)->pin_flag = false;
 }
 
 size_t ClockReplacer::Size() { return ClockReplacer_frame_counter; }
