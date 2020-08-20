@@ -30,13 +30,18 @@ void ClockReplacer::move_clock_hand() {
 }
 
 auto ClockReplacer::Victim(frame_id_t *frame_id) -> bool {
+  std::lock_guard<std::mutex> lockGuard(latch_);
   if (ClockReplacer_frame_counter == 0) {
     return false;
   }
   while (true) {
     if ((!clock_hand->pin_flag) && (!clock_hand->ref_flag)) {
       *frame_id = clock_hand - clock_vector.begin();
-      Pin(*frame_id);
+      if (!((clock_vector.begin() + *frame_id)->pin_flag)) {
+        ClockReplacer_frame_counter -= 1;
+      }
+      (clock_vector.begin() + *frame_id)->pin_flag = true;
+      (clock_vector.begin() + *frame_id)->ref_flag = true;
       break;
     }
     if ((!clock_hand->pin_flag) && (clock_hand->ref_flag)) {
@@ -50,6 +55,7 @@ auto ClockReplacer::Victim(frame_id_t *frame_id) -> bool {
 }
 
 void ClockReplacer::Pin(frame_id_t frame_id) {
+  std::lock_guard<std::mutex> lockGuard(latch_);
   if (!((clock_vector.begin() + frame_id)->pin_flag)) {
     ClockReplacer_frame_counter -= 1;
   }
@@ -58,12 +64,16 @@ void ClockReplacer::Pin(frame_id_t frame_id) {
 }
 
 void ClockReplacer::Unpin(frame_id_t frame_id) {
+  std::lock_guard<std::mutex> lockGuard(latch_);
   if (((clock_vector.begin() + frame_id)->pin_flag)) {
     ClockReplacer_frame_counter += 1;
   }
   (clock_vector.begin() + frame_id)->pin_flag = false;
 }
 
-auto ClockReplacer::Size() -> size_t { return ClockReplacer_frame_counter; }
+auto ClockReplacer::Size() -> size_t {
+  std::lock_guard<std::mutex> lockGuard(latch_);
+  return ClockReplacer_frame_counter;
+}
 
 }  // namespace bustub

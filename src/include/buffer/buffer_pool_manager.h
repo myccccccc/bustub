@@ -116,7 +116,7 @@ class BufferPoolManager {
    * @param page_id id of page to be fetched
    * @return the requested page
    */
-  auto FetchPageImpl(page_id_t page_id) -> Page *;
+  auto FetchPageImpl(page_id_t page_id, bool has_latch = false) -> Page *;
 
   /**
    * Unpin the target page from the buffer pool.
@@ -124,33 +124,33 @@ class BufferPoolManager {
    * @param is_dirty true if the page should be marked as dirty, false otherwise
    * @return false if the page pin count is <= 0 before this call, true otherwise
    */
-  auto UnpinPageImpl(page_id_t page_id, bool is_dirty) -> bool;
+  auto UnpinPageImpl(page_id_t page_id, bool is_dirty, bool has_latch = false) -> bool;
 
   /**
    * Flushes the target page to disk.
    * @param page_id id of page to be flushed, cannot be INVALID_PAGE_ID
    * @return false if the page could not be found in the page table, true otherwise
    */
-  auto FlushPageImpl(page_id_t page_id) -> bool;
+  auto FlushPageImpl(page_id_t page_id, bool has_latch = false) -> bool;
 
   /**
    * Creates a new page in the buffer pool.
    * @param[out] page_id id of created page
    * @return nullptr if no new pages could be created, otherwise pointer to new page
    */
-  auto NewPageImpl(page_id_t *page_id) -> Page *;
+  auto NewPageImpl(page_id_t *page_id, bool has_latch = false) -> Page *;
 
   /**
    * Deletes a page from the buffer pool.
    * @param page_id id of page to be deleted
    * @return false if the page exists but could not be deleted, true if the page didn't exist or deletion succeeded
    */
-  auto DeletePageImpl(page_id_t page_id) -> bool;
+  auto DeletePageImpl(page_id_t page_id, bool has_latch = false) -> bool;
 
   /**
    * Flushes all the pages in the buffer pool to disk.
    */
-  void FlushAllPagesImpl();
+  void FlushAllPagesImpl(bool has_latch = false);
 
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
@@ -174,6 +174,6 @@ class BufferPoolManager {
    * Get a free page from free_list_ or replacer_, this func is used by NewPageImpl and FetchPageImpl
    * @return frame_id id of the free page that we found, -1 otherwise
    */
-  auto get_free_page() -> frame_id_t;
+  auto get_free_page(bool has_latch = false) -> frame_id_t;
 };
 }  // namespace bustub

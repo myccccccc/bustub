@@ -58,6 +58,8 @@ class ClockReplacer : public Replacer {
   decltype(clock_vector)::iterator clock_hand;
 
   void move_clock_hand();
+
+  std::mutex latch_;
 };
 
 }  // namespace bustub
