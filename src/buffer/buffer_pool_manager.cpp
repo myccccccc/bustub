@@ -35,15 +35,13 @@ BufferPoolManager::~BufferPoolManager() {
 }
 
 auto BufferPoolManager::get_free_page(bool has_latch) -> frame_id_t {
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   frame_id_t frame_id;
   if (free_list_.empty()) {
     if (!replacer_->Victim(&frame_id)) {
-      if (!has_latch) {
-        latch_.unlock();
-      }
       return -1;
     }
     DeletePageImpl(pages_[frame_id].page_id_, true);
@@ -51,9 +49,6 @@ auto BufferPoolManager::get_free_page(bool has_latch) -> frame_id_t {
   frame_id = free_list_.back();
   free_list_.pop_back();
   replacer_->Pin(frame_id);
-  if (!has_latch) {
-    latch_.unlock();
-  }
   return frame_id;
 }
 
@@ -65,8 +60,9 @@ auto BufferPoolManager::FetchPageImpl(page_id_t page_id, bool has_latch) -> Page
   // 2.     If R is dirty, write it back to the disk.
   // 3.     Delete R from the page table and insert P.
   // 4.     Update P's metadata, read in the page content from disk, and then return a pointer to P.
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   if (page_table_.find(page_id) != page_table_.end()) {
     auto frame_id = page_table_[page_id];
@@ -74,16 +70,10 @@ auto BufferPoolManager::FetchPageImpl(page_id_t page_id, bool has_latch) -> Page
       replacer_->Pin(frame_id);
     }
     pages_[frame_id].pin_count_ += 1;
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return &pages_[frame_id];
   }
   auto frame_id = get_free_page(true);
   if (frame_id == -1) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return nullptr;
   }
   pages_[frame_id].page_id_ = page_id;
@@ -92,53 +82,40 @@ auto BufferPoolManager::FetchPageImpl(page_id_t page_id, bool has_latch) -> Page
   pages_[frame_id].ResetMemory();
   disk_manager_->ReadPage(page_id, pages_[frame_id].data_);
   page_table_[page_id] = frame_id;
-  if (!has_latch) {
-    latch_.unlock();
-  }
   return &pages_[frame_id];
 }
 
 auto BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty, bool has_latch) -> bool {
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   assert(page_table_.find(page_id) != page_table_.end());
   auto frame_id = page_table_[page_id];
   pages_[frame_id].is_dirty_ = is_dirty || pages_[frame_id].is_dirty_;
   if (pages_[frame_id].GetPinCount() <= 0) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return false;
   }
   pages_[frame_id].pin_count_ -= 1;
   if (pages_[frame_id].GetPinCount() == 0) {
     replacer_->Unpin(frame_id);
   }
-  if (!has_latch) {
-    latch_.unlock();
-  }
   return true;
 }
 
 auto BufferPoolManager::FlushPageImpl(page_id_t page_id, bool has_latch) -> bool {
   // Make sure you call DiskManager::WritePage!
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   assert(page_id != INVALID_PAGE_ID);
   if (page_table_.find(page_id) == page_table_.end()) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return false;
   }
   auto frame_id = page_table_[page_id];
   if (pages_[frame_id].IsDirty()) {
     disk_manager_->WritePage(page_id, pages_[frame_id].GetData());
-  }
-  if (!has_latch) {
-    latch_.unlock();
   }
   return true;
 }
@@ -149,14 +126,12 @@ auto BufferPoolManager::NewPageImpl(page_id_t *page_id, bool has_latch) -> Page 
   // 2.   Pick a victim page P from either the free list or the replacer. Always pick from the free list first.
   // 3.   Update P's metadata, zero out memory and add P to the page table.
   // 4.   Set the page ID output parameter. Return a pointer to P.
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   frame_id_t frame_id = get_free_page(true);
   if (frame_id == -1) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return nullptr;
   }
   *page_id = disk_manager_->AllocatePage();
@@ -165,9 +140,6 @@ auto BufferPoolManager::NewPageImpl(page_id_t *page_id, bool has_latch) -> Page 
   pages_[frame_id].is_dirty_ = false;
   pages_[frame_id].ResetMemory();
   page_table_[*page_id] = frame_id;
-  if (!has_latch) {
-    latch_.unlock();
-  }
   return &pages_[frame_id];
 }
 
@@ -177,19 +149,14 @@ auto BufferPoolManager::DeletePageImpl(page_id_t page_id, bool has_latch) -> boo
   // 1.   If P does not exist, return true.
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   if (page_table_.find(page_id) == page_table_.end()) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return true;
   }
   if (pages_[page_table_[page_id]].GetPinCount() != 0) {
-    if (!has_latch) {
-      latch_.unlock();
-    }
     return false;
   }
   disk_manager_->DeallocatePage(page_id);
@@ -200,22 +167,17 @@ auto BufferPoolManager::DeletePageImpl(page_id_t page_id, bool has_latch) -> boo
   pages_[frame_id].pin_count_ = 0;
   pages_[frame_id].is_dirty_ = false;
   free_list_.push_back(frame_id);
-  if (!has_latch) {
-    latch_.unlock();
-  }
   return true;
 }
 
 void BufferPoolManager::FlushAllPagesImpl(bool has_latch) {
+  std::unique_lock<std::mutex> ulck;
   if (!has_latch) {
-    latch_.lock();
+    ulck = std::unique_lock<std::mutex>(latch_);
   }
   for (auto &iter : page_table_) {
     auto page_id = iter.first;
     FlushPageImpl(page_id, true);
-  }
-  if (!has_latch) {
-    latch_.unlock();
   }
 }
 
