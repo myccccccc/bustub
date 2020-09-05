@@ -21,7 +21,7 @@
 namespace bustub {
 
 // NOLINTNEXTLINE
-TEST(HashTableTest, DISABLED_SampleTest) {
+TEST(HashTableTest, SampleTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManager(50, disk_manager);
 
@@ -48,6 +48,10 @@ TEST(HashTableTest, DISABLED_SampleTest) {
   for (int i = 0; i < 5; i++) {
     if (i == 0) {
       // duplicate values for the same key are not allowed
+      std::vector<int> res;
+      ht.GetValue(nullptr, i, &res);
+      EXPECT_EQ(1, res.size()) << "Failed to keep " << i << std::endl;
+      EXPECT_EQ(i, res[0]);
       EXPECT_FALSE(ht.Insert(nullptr, i, 2 * i));
     } else {
       EXPECT_TRUE(ht.Insert(nullptr, i, 2 * i));

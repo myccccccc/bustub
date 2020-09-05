@@ -97,6 +97,12 @@ class LinearProbeHashTable : public HashTable<KeyType, ValueType, KeyComparator>
 
   // Hash function
   HashFunction<KeyType> hash_fn_;
+
+  bool get_bucket_id_value(u_int64_t prob, const KeyType &key, std::vector<ValueType> *result);
+
+  int insert_bucket_id_kv(u_int64_t prob, const KeyType &key, const ValueType &value);
+
+  int remove_bucket_id_kv(u_int64_t prob, const KeyType &key, const ValueType &value);
 };
 
 }  // namespace bustub
